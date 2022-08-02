@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .container{
+      display: flex;
+      flex-direction: row;
+      margin-top: 64px;
+      width: 100vw;
+      justify-content: center;
+      align-items: center;
+      font-family: "Segoe UI";
+    }
+    #schoolSearch{
+      margin: 4px;
+      padding: 8px;
+      border-radius: 8px;
+      width: 20%;
+    }
+    .select{
+      margin: 4px;
+      padding: 12px;
+      padding-left: 1%;
+      padding-right: 1%;
+      border-radius: 8px;
+      color: white;
+      background-color: black;
+      width: 90%;
+      -webkit-transition: background-color 300ms ease-in-out;
+      transition: background-color 300ms ease-in-out;
+      cursor: pointer
+    }
+
+    .select:hover {
+      background-color: #3d4d59;
+      color: white;
+    }
+    #table{
+        border-collapse: collapse;
+        border-radius: 16px;
+        border-style: hidden; 
+        width: 90%;
+        box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;
+      }
+
+    td{
+
+      padding: 16px;
+      font-size: 16px;
+      font-family: "Segoe UI";
+      width: 20%;
+      opacity: 1;
+      animation-name: fadein;
+      animation-duration: 0.5s;
+    }
+
+    #table tr:last-child td:first-child {
+        border-top-left-radius: 16px;
+    }
+
+    #table tr:last-child td:last-child {
+        border-top-right-radius: 16px;
+    }
+
+    .header{
+        padding: 16px;
+        font-size: 16px;
+        font-family: "Segoe UI";
+        width: 20%;
+        background-color: black;
+        color: white;
+        font-weight: bold;
+    }
+    .primary{
+        background-color: #f5f5f5;
+    }
+    @media only screen and (max-width: 900px) {
+      .container{
+        display: flex;
+        flex-direction: column;
+      }
+      #schoolSearch{
+      width: 90%;
+      }
+      #Select{
+        width: 92%;
+      }
+      .header{
+        padding: 10px;
+        font-size: 16px;
+        font-family: "Segoe UI";
+        width: 20%;
+        background-color: black;
+        color: white;
+        font-weight: bold;
+      }
+      td{
+        padding: 10px;
+        font-size: 16px;
+        font-family: "Segoe UI";
+        width: 20%;
+        opacity: 1;
+        animation-name: fadein;
+        animation-duration: 0.5s;
+      }
+
+    }
+    @keyframes example {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <input placeholder="выберите школу..." list="schools" id="schoolSearch" name="schoolSearch" />
+    <datalist id="schools">
+
+    </datalist>
+
+  </div>
+
+  <div class="container">
+    <table id="table">
+    </table>
+  </div>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src='https://cdn.jsdelivr.net/npm/meilisearch@latest/dist/bundles/meilisearch.umd.js'></script>
+  <script >
+    let tg = window.Telegram.WebApp;
+    const client = new MeiliSearch({
+      host: 'https://theseagull.ru/',
+      apiKey: 'YjRmNGE4YzI0NDcxZWJhZTZhMzFmOGRm'
+    })
+    const index = client.index('schoolData')
+
+    const targetDataList = document.querySelector('#schools')
+
+    const searchData = async function (searchString) {
+      const searched = await index.search(searchString)
+      console.log(searched)
+      const result = searched.hits
+
+      return result
+    }
+
+    const updateDataList = async function (searchString) {
+      const result = await searchData(searchString)
+
+      targetDataList.innerHTML = ''
+      for (const school of result) {
+        const optionTag = document.createElement('option')
+        optionTag.setAttribute('value', school.title)
+        targetDataList.appendChild(optionTag)
+      }
+      return result
+    }
+
+    const targetInput = document.querySelector('#schoolSearch')
+
+    targetInput.addEventListener('input', async (e) => {
+      const searchedElements = await updateDataList(e.target.value)
+
+      const targetTable = document.querySelector('#table')
+      targetTable.innerHTML = '<tr><td class="header">Область</td><td class="header">Район</td><td class="header">Населенный пункт</td><td class="header">Название организации</td><td class="header">Это ваша школа?</td></tr>'
+      for (const [index, el] of searchedElements.entries()) {
+
+        const tr = document.createElement('tr')
+        const td1 = document.createElement('td')
+        const td2 = document.createElement('td')
+        const td3 = document.createElement('td')
+        const td4 = document.createElement('td')
+        const td5 = document.createElement('td')
+
+        td1.appendChild(document.createTextNode(el.state))
+        td2.appendChild(document.createTextNode(el.district))
+        td3.appendChild(document.createTextNode(el.city))
+        td4.appendChild(document.createTextNode(el.title))
+
+        const selectButton = document.createElement('button')
+        selectButton.classList.add("select")
+        selectButton.appendChild(document.createTextNode('Выбрать'))
+        selectButton.addEventListener('click', async (e) => {
+          console.log('finnaly: ', el.id)
+          tg.sendData(String(el.id))
+        })
+
+        td5.appendChild(selectButton)
+
+        if (index % 2 == 0){
+          td1.classList.add("primary")
+          td2.classList.add("primary")
+          td3.classList.add("primary")
+          td4.classList.add("primary")
+          td5.classList.add("primary")
+        }
+
+        tr.appendChild(td1)
+        tr.appendChild(td2)
+        tr.appendChild(td3)
+        tr.appendChild(td4)
+        tr.appendChild(td5)
+
+        targetTable.appendChild(tr)
+      }
+    })
+
+  </script>
+</body>
+</html>
